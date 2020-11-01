@@ -29,13 +29,18 @@ class VanillaBS():
 
     def compute_bs_gamma(self):
         return (scipy.stats.norm.pdf(self.d1()))/(self.spot*self.sigma*np.sqrt(self.T))
+    
     def compute_bs_vega(self):
         return self.spot*scipy.stats.norm.pdf(self.d1())*np.sqrt(self.T)
+    
     def compute_bs_theta():
-        pass    
-
-    def compute_bs_rho():
         pass
+
+    def compute_bs_rho(self):
+        if self.call: 
+            rho = self.strike*self.T*scipy.stats.norm.cdf(self.d2())*np.exp(-self.r*self.T)
+        else:
+            rho = -self.strike*self.T*scipy.stats.norm.cdf(-self.d2())*np.exp(-self.r*self.T)
     
     def d1(self):
         spot,strike,r,T,sigma = self.spot,self.strike,self.r,self.T,self.sigma
@@ -46,13 +51,13 @@ class VanillaBS():
 
     def bs_price():
         raise NotImplementedError()
-        
+
 class MonteCarloBS(VanillaBS):
     def __init__(self,strike,spot,T,r,sigma = None,price = None,n_samp = 10**7,call = True):
         super().__init__(strike,spot,T,r,sigma,price,call)
         self.n_samp = n_samp
     
-    def bs_imp_vol(self, tol):
+    def compute_bs_imp_vol(self, tol):
         super().bs_imp_vol(tol)
     
     def compute_bs_price(self):
@@ -60,7 +65,7 @@ class MonteCarloBS(VanillaBS):
         assert self.sigma is not None, 'Need volatility to compute price.'    
         return VanillaPayoff(self.strike,self.call).compute_payoff(np.mean(self.spot*np.exp((self.r - self.sigma**2/2)*self.T + np.sqrt(self.sigma*self.T)*np.random.normal(size = self.n_samp))))
  
-    def bs_imp_vol(self,tol = 10**(-5)):
+    def compute_bs_imp_vol(self,tol = 10**(-5)):
         '''
         Newton-Raephson implied volatility for European options under Black-Scholes model assumptions.
         '''
