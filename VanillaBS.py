@@ -44,6 +44,7 @@ class VanillaBS():
     
     def d1(self):
         spot,strike,r,T,sigma = self.spot,self.strike,self.r,self.T,self.sigma
+        print('chnged')
         return (np.log(spot/strike) + T*(r + 0.5*sigma**2))/(sigma*np.sqrt(T))
 
     def d2(self):
@@ -62,22 +63,23 @@ class MonteCarloBS(VanillaBS):
     
     def compute_bs_price(self):
 
-        assert self.sigma is not None, 'Need volatility to compute price.'    
-        return VanillaPayoff(self.strike,self.call).compute_payoff(np.mean(self.spot*np.exp((self.r - self.sigma**2/2)*self.T + np.sqrt(self.sigma*self.T)*np.random.normal(size = self.n_samp))))
+        assert self.sigma is not None, 'Need volatility to compute price.'
+        print()
+        return np.mean(VanillaPayoff(self.strike,self.call).compute_payoff(self.spot*np.exp((self.r - self.sigma**2/2)*self.T + self.sigma*np.sqrt(self.T)*np.random.normal(size = self.n_samp))))
  
     def compute_bs_imp_vol(self,tol = 10**(-5)):
         '''
         Newton-Raephson implied volatility for European options under Black-Scholes model assumptions.
         '''
         assert self.price, 'Need a reference price to calculate implied-volatility.'
-        self.sigma = np.sqrt(2*np.pi/self.T)*self.price/self.spot#Initial guess
-        # As of now, it seems that the variance of the naive monte-carlo simulator is causing accuracy issues 
+        self.sigma = 0.5
         sigma_prev = 0
         while abs(sigma_prev - self.sigma) > tol:
             sigma_prev = self.sigma
             vega = self.compute_bs_vega()
             bs_price = self.compute_bs_price()
             self.sigma = self.sigma - (bs_price - self.price)/vega
+            print(self.sigma)
         return self.sigma
 
 class PDEBS(VanillaBS):
