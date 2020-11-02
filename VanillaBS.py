@@ -1,3 +1,4 @@
+from types import new_class
 from payoff import VanillaPayoff
 import numpy as np 
 import scipy.stats
@@ -13,10 +14,15 @@ class VanillaBS():
         self.r = r
         self.price = price
         self.call = call
+        self.greeks = ['delta','gamma','theta','vega','rho']
 
     
-    def compute_bs_greeks():
-        pass
+    def compute_bs_greeks(self):
+        '''
+        All option greeks 
+        '''
+        assert self.sigma is not None 
+        return {letter: eval('self.compute_bs_' + str(letter) + '()') for letter in self.greeks}
 
     def compute_bs_delta(self):
         '''
@@ -34,7 +40,7 @@ class VanillaBS():
         return self.spot*scipy.stats.norm.pdf(self.d1())*np.sqrt(self.T)
     
     def compute_bs_theta():
-        pass
+        return 
 
     def compute_bs_rho(self):
         if self.call: 
@@ -44,27 +50,22 @@ class VanillaBS():
     
     def d1(self):
         spot,strike,r,T,sigma = self.spot,self.strike,self.r,self.T,self.sigma
-        print('chnged')
         return (np.log(spot/strike) + T*(r + 0.5*sigma**2))/(sigma*np.sqrt(T))
 
     def d2(self):
         return self.d1() - self.sigma*np.sqrt(self.T)
 
-    def bs_price():
+    def compute_bs_price():
         raise NotImplementedError()
 
 class MonteCarloBS(VanillaBS):
-    def __init__(self,strike,spot,T,r,sigma = None,price = None,n_samp = 10**7,call = True):
+    def __init__(self,strike,spot,T,r,sigma = None,price = None,n_samp = 10**8,call = True):
         super().__init__(strike,spot,T,r,sigma,price,call)
         self.n_samp = n_samp
-    
-    def compute_bs_imp_vol(self, tol):
-        super().bs_imp_vol(tol)
-    
+
     def compute_bs_price(self):
 
         assert self.sigma is not None, 'Need volatility to compute price.'
-        print()
         return np.mean(VanillaPayoff(self.strike,self.call).compute_payoff(self.spot*np.exp((self.r - self.sigma**2/2)*self.T + self.sigma*np.sqrt(self.T)*np.random.normal(size = self.n_samp))))
  
     def compute_bs_imp_vol(self,tol = 10**(-5)):
@@ -79,8 +80,22 @@ class MonteCarloBS(VanillaBS):
             vega = self.compute_bs_vega()
             bs_price = self.compute_bs_price()
             self.sigma = self.sigma - (bs_price - self.price)/vega
-            print(self.sigma)
         return self.sigma
+    def finite_diff_delta(self,tpe,tol = 10**(-3),h = .01):
+        '''
+        Use a forward, backward, or centered finite difference to calculate call
+        delta
+        '''
+        print('HERE')
+        if tpe == 'fwd':
+           v1 = self.compute_bs_price()
+           option2 =  MonteCarloBS(self.strike,self.spot + h, self.T,self.r,self.sigma,call=self.call)
+           v2 = option2.compute_bs_price()
+           print(v2)
+           print(v1)
+           print(v2 - v1)
+           return((v2 - v1)/h)
+    
 
 class PDEBS(VanillaBS):
     
