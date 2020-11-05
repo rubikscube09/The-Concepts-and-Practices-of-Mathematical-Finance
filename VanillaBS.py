@@ -40,7 +40,8 @@ class VanillaBS():
         return self.spot*scipy.stats.norm.pdf(self.d1())*np.sqrt(self.T)
     
     def compute_bs_theta():
-        return 
+        #TODO - IMPLEMENT THIS 
+        pass
 
     def compute_bs_rho(self):
         if self.call: 
@@ -59,12 +60,14 @@ class VanillaBS():
         raise NotImplementedError()
 
 class MonteCarloBS(VanillaBS):
-    def __init__(self,strike,spot,T,r,sigma = None,price = None,n_samp = 10**8,call = True):
+    def __init__(self,strike,spot,T,r,sigma = None,price = None,n_samp = 10**7,call = True,seed = np.random.randint(low = 1,high = 10**8)):
         super().__init__(strike,spot,T,r,sigma,price,call)
         self.n_samp = n_samp
+        self.seed = seed
 
     def compute_bs_price(self):
-
+        np.random.seed(self.seed)
+        print(self.seed)
         assert self.sigma is not None, 'Need volatility to compute price.'
         return np.mean(VanillaPayoff(self.strike,self.call).compute_payoff(self.spot*np.exp((self.r - self.sigma**2/2)*self.T + self.sigma*np.sqrt(self.T)*np.random.normal(size = self.n_samp))))
  
@@ -81,21 +84,32 @@ class MonteCarloBS(VanillaBS):
             bs_price = self.compute_bs_price()
             self.sigma = self.sigma - (bs_price - self.price)/vega
         return self.sigma
-    def finite_diff_delta(self,tpe,tol = 10**(-3),h = .01):
+    def finite_diff_delta(self,tpe = 'ctr',tol = 10**(-3),h = 10**(-4)):
         '''
         Use a forward, backward, or centered finite difference to calculate call
-        delta
+        delta. Uses the same path for finite differencing to avoid monte-carlo
+        variance issues. Centered finite differences are preferred due to lower
+        estimator bias.
+
+        TODO - Use tolerance for estimates up to arbitrary position. 
         '''
-        print('HERE')
+        # Currently off from Black Scholes Delta by a factor that is O(10^(-2))
+        # Monte Carlo error scales poorly so more draws maybe not worth it.
         if tpe == 'fwd':
            v1 = self.compute_bs_price()
-           option2 =  MonteCarloBS(self.strike,self.spot + h, self.T,self.r,self.sigma,call=self.call)
+           option2 =  MonteCarloBS(self.strike,self.spot + h, self.T,self.r,self.sigma,call=self.call, seed = self.seed) 
            v2 = option2.compute_bs_price()
            print(v2)
            print(v1)
            print(v2 - v1)
            return((v2 - v1)/h)
-    
+        elif tpe == 'ctr':
+           option1 = MonteCarloBS(self.strike,self.spot - h, self.T,self.r,self.sigma,call=self.call) 
+           option2 =  MonteCarloBS(self.strike,self.spot + h, self.T,self.r,self.sigma,call=self.call, seed = option1.seed) 
+           v1 = option1.compute_bs_price()
+           v2 = option2.compute_bs_price()
+           return((v2 - v1)/(2*h))
+
 
 class PDEBS(VanillaBS):
     
