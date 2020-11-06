@@ -26,7 +26,13 @@ class VanillaBS():
 
     def compute_bs_delta(self):
         '''
-        Compute Delta of European Option
+        Compute Delta of European Option under the standard Black-Scholes model.
+
+        Parameters - 
+            None
+        
+        Returns - 
+            Black Scholes Delta.
         '''
         if self.call: 
             return scipy.stats.norm.cdf(self.d1())
@@ -67,7 +73,6 @@ class MonteCarloBS(VanillaBS):
 
     def compute_bs_price(self):
         np.random.seed(self.seed)
-        print(self.seed)
         assert self.sigma is not None, 'Need volatility to compute price.'
         return np.mean(VanillaPayoff(self.strike,self.call).compute_payoff(self.spot*np.exp((self.r - self.sigma**2/2)*self.T + self.sigma*np.sqrt(self.T)*np.random.normal(size = self.n_samp))))
  
@@ -89,7 +94,10 @@ class MonteCarloBS(VanillaBS):
         Use a forward, backward, or centered finite difference to calculate call
         delta. Uses the same path for finite differencing to avoid monte-carlo
         variance issues. Centered finite differences are preferred due to lower
-        estimator bias.
+        estimator bias. Common random numbers are used for estimation, as they
+        drastically lower the variance of the finite difference estimator - 
+        without these, numerical instability would most likely be too 
+        great.
 
         TODO - Use tolerance for estimates up to arbitrary position. 
         '''
@@ -99,9 +107,6 @@ class MonteCarloBS(VanillaBS):
            v1 = self.compute_bs_price()
            option2 =  MonteCarloBS(self.strike,self.spot + h, self.T,self.r,self.sigma,call=self.call, seed = self.seed) 
            v2 = option2.compute_bs_price()
-           print(v2)
-           print(v1)
-           print(v2 - v1)
            return((v2 - v1)/h)
         elif tpe == 'ctr':
            option1 = MonteCarloBS(self.strike,self.spot - h, self.T,self.r,self.sigma,call=self.call) 
@@ -109,7 +114,23 @@ class MonteCarloBS(VanillaBS):
            v1 = option1.compute_bs_price()
            v2 = option2.compute_bs_price()
            return((v2 - v1)/(2*h))
-
+    def compute_finite_diff_gamma(self,h = 10**(-3)):
+        '''
+        Compute gamma using a finite differencing approach. One approach is to 
+        finite difference the delta itself, although this seems like there would 
+        be too much numerical error propagation. In general, this method seems to have
+        stability issues on its own - it doesn't seem to work - things are too 
+        close.
+        '''
+        option1 = MonteCarloBS(self.strike,self.spot - h, self.T,self.r,self.sigma,call=self.call,seed = self.seed) 
+        option2 =  MonteCarloBS(self.strike,self.spot + h, self.T,self.r,self.sigma,call=self.call, seed = self.seed) 
+        v1 = option1.compute_bs_price()
+        v2 = option2.compute_bs_price()
+        v3 = self.compute_bs_price()
+        print(v1)
+        print(v2)
+        print(2*v3)
+        return ((v1 + v2 - 2*v3)/(h**2))
 
 class PDEBS(VanillaBS):
     
