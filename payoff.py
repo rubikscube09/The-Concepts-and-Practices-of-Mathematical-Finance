@@ -1,9 +1,9 @@
 class Payoff():
     
-    def __init__(self,strike,spot):
+    def __init__(self,strike):
         self.strike = strike
     
-    def compute_payoff(self,spot):
+    def compute_payoff():
         raise NotImplementedError()
 
 class VanillaPayoff(Payoff):    
@@ -13,7 +13,11 @@ class VanillaPayoff(Payoff):
     
     def compute_payoff(self,spot):
         if self.call:
-            return max(spot - self.strike,0)
+            a = spot - self.strike
+            a[a < 0] = 0
         else:
-            return max(self.strike - spot,0)
+            a = self.strike - spot
+            a[a < 0] = 0
+        return a
+            
         

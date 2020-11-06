@@ -5,8 +5,38 @@ import scipy.stats
 
 
 class VanillaBS(): 
+    '''
+    Class that represents European options that are priced under the standard 
+    assumptions of the Black-Scholes model, with geometric brownian motion:
 
+    dSt = St*(r*dt + sigma*dWt)   
+
+    Attributes:
+        strike : (float)
+            Option strike price.
+        spot : (float) 
+            Spot price of the underlying.
+        T : (float)
+            Time to option expiry.
+        r : (float)
+            Risk free interest rate.
+        sigma : float, default - None
+            Underlying volatility. Defaults to None for implied volatility
+            calculations.
+        price : float, default - None
+            Option price or premium. Defaults to None.
+        call : bool, default True
+            Whether option is a call or put.      
+        
+    Methods:
+        compute_bs_greeks - Calculate all Black Scholes Greeks
+        
+
+    '''
     def __init__(self,strike,spot,T,r,sigma = None,price = None, call = True):
+        '''
+        Constructor
+        '''
         self.strike = strike
         self.spot = spot
         self.T = T
@@ -19,7 +49,13 @@ class VanillaBS():
     
     def compute_bs_greeks(self):
         '''
-        All option greeks 
+        Computes all option greeks as specified in the class greeks attribute.
+
+        Arguments:
+            None
+
+        Returns:
+            dict{str:float} - dictionary with pairs given by  
         '''
         assert self.sigma is not None 
         return {letter: eval('self.compute_bs_' + str(letter) + '()') for letter in self.greeks}
