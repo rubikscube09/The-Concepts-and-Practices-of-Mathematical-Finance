@@ -22,12 +22,14 @@ class GeometricBrownianMotion(SamplePath):
         self.mu = mu
         self.sigma = sigma
         self.method = method
+        self.n_samps = int(self.T/self.dt)
+        self.time = np.linspace(0,T,self.n_samps)
+
 
     def generate_paths(self,n_paths = 1):
-        num_samps = int(self.T/self.dt)
-        sample_paths = np.ndarray(shape = [n_paths,num_samps])
+        sample_paths = np.ndarray(shape = [n_paths,self.n_samps])
         sample_paths[:,0] = np.array([self.S0]*n_paths)
-        sample_paths[:,1:] = np.exp(self.mu*self.dt + np.sqrt(self.dt)*self.sigma*np.random.randn(n_paths,num_samps - 1))
+        sample_paths[:,1:] = np.exp(self.mu*self.dt + np.sqrt(self.dt)*self.sigma*np.random.randn(n_paths,self.n_samps - 1))
         sample_paths = sample_paths.cumprod(axis = 1)
         return sample_paths
         

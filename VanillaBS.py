@@ -30,8 +30,6 @@ class VanillaBS():
         
     Methods:
         compute_bs_greeks - Calculate all Black Scholes Greeks
-        
-
     '''
     def __init__(self,strike,spot,T,r,sigma = None,price = None, call = True):
         '''
